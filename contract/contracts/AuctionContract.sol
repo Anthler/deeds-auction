@@ -1,13 +1,14 @@
 pragma solidity 0.5.1;
 
-import "./NewDeedRepo.sol";
+import "./DeedContract.sol";
+
 contract AuctionContract{
     
     address deedRepositoryAddress;
+    
     Auction[] public auctions;
     mapping(uint => Bid[]) auctionBids;
     mapping(address => uint[]) auctionOwner;
-    
     
     struct Auction{
         string name;
@@ -26,7 +27,13 @@ contract AuctionContract{
         uint amount;
     }
     
-        modifier isOwner(uint _auctionId) {
+    event BidSuccess(address _from, uint _auctionId);
+    event AuctionCreated(address _owner, uint _auctionId);
+    event AuctionCanceled(address _owner, uint _auctionId);
+    event AuctionFinalized(address _owner, uint _auctionId);
+    
+    
+    modifier isOwner(uint _auctionId) {
 
         require(auctions[_auctionId].owner == msg.sender);
         _;
@@ -48,11 +55,13 @@ contract AuctionContract{
     function getBidsCount(uint auctionId) public view returns(uint){return auctionBids[auctionId].length;}
     
     function getAuctionsOf(address _owner) public view returns(uint[] memory){
+        
         uint[] storage auctionsOwned = auctionOwner[_owner]; 
         return auctionsOwned;
     }
     
     function getCurrentBid(uint _auctionId) public view returns(uint, address){
+        
         uint bidsLength = auctionBids[_auctionId].length;
         if(bidsLength > 0 ){
             Bid memory lastBid = auctionBids[_auctionId][bidsLength-1];
@@ -66,18 +75,23 @@ contract AuctionContract{
         return auctionOwner[_owner].length;
     }
     
-    function getAuctionById(uint _auctionId) public view returns(
+    function getAuctionById(uint _auctionId)
+        public 
+        view 
+        returns
         
-        string memory name,
-        uint256 blockDeadline,
-        uint256 startPrice,
-        string memory metadata,
-        uint256 deedId,
-        //address deedRepositoryAddress,
-        address owner,
-        bool active,
-        bool finalized
-        ){
+        (
+            string memory name,
+            uint256 blockDeadline,
+            uint256 startPrice,
+            string memory metadata,
+            uint256 deedId,
+            address owner,
+            bool active,
+            bool finalized
+        )
+        
+        {
         
         Auction storage auc = auctions[_auctionId];
                 return (
@@ -93,25 +107,38 @@ contract AuctionContract{
             auc.finalized
             );
         
-    }
+        }
     
-        function createAuction( uint256 _deedId, string memory _auctionTitle, string memory _metadata, uint256 _startPrice, uint _blockDeadline) public contractIsDeedOwner(_deedId) returns(bool) {
-
-        uint auctionId = auctions.length;
-        Auction memory newAuction;
-        newAuction.name = _auctionTitle;
-        newAuction.blockDeadline = _blockDeadline;
-        newAuction.startPrice = _startPrice;
-        newAuction.metadata = _metadata;
-        newAuction.deedId = _deedId;
-        newAuction.owner = msg.sender;
-        newAuction.active = true;
-        newAuction.finalized = false;
-        auctions.push(newAuction);        
-        auctionOwner[msg.sender].push(auctionId);
+        function createAuction(
         
-        emit AuctionCreated(msg.sender, auctionId);
-        return true;
+            uint256 _deedId, 
+            string memory _auctionTitle, 
+            string memory _metadata, 
+            uint256 _startPrice, 
+            uint _blockDeadline
+            
+            ) 
+            
+            public 
+            contractIsDeedOwner(_deedId) 
+            returns(bool)
+            
+            {
+                uint auctionId = auctions.length;
+                Auction memory newAuction;
+                newAuction.name = _auctionTitle;
+                newAuction.blockDeadline = _blockDeadline;
+                newAuction.startPrice = _startPrice;
+                newAuction.metadata = _metadata;
+                newAuction.deedId = _deedId;
+                newAuction.owner = msg.sender;
+                newAuction.active = true;
+                newAuction.finalized = false;
+                auctions.push(newAuction);        
+                auctionOwner[msg.sender].push(auctionId);
+            
+                emit AuctionCreated(msg.sender, auctionId);
+                return true;
     }
     
     function approveAndTransfer(address _from, address _to,  uint256 _deedId) public returns(bool) {
@@ -123,7 +150,8 @@ contract AuctionContract{
     }
     
     
-    function cancelAuction(uint _auctionId) public isOwner(_auctionId) {
+    function cancelAuction(uint _auctionId) public isOwner(_auctionId){
+        
         Auction memory auction = auctions[_auctionId];
         uint  bidsLength = auctionBids[_auctionId].length;
         
@@ -197,13 +225,6 @@ contract AuctionContract{
         newBid.amount = amountSent;
         auctionBids[_auctionId].push(newBid);
         emit BidSuccess(msg.sender, _auctionId);
-        
-        
     }
     
-    
-    event BidSuccess(address _from, uint _auctionId);
-    event AuctionCreated(address _owner, uint _auctionId);
-    event AuctionCanceled(address _owner, uint _auctionId);
-    event AuctionFinalized(address _owner, uint _auctionId);
 }

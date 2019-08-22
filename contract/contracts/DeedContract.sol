@@ -1,8 +1,8 @@
 pragma solidity 0.5.1;
 
-import "github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721Full.sol";
+//import "github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721Full.sol";
 
-
+import "../node_modules/@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 
 contract DeedContract is ERC721Full{
     
